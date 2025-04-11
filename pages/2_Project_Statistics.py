@@ -1,3 +1,5 @@
+import matplotlib
+matplotlib.use('Agg')  # Set non-interactive backend for headless servers
 import matplotlib.pyplot as plt
 import numpy as np
 import streamlit as st

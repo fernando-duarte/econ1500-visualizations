@@ -1,5 +1,7 @@
 import streamlit as st
 import pandas as pd
+import matplotlib
+matplotlib.use('Agg')  # Set non-interactive backend for headless servers
 import matplotlib.pyplot as plt
 import networkx as nx
 import re
