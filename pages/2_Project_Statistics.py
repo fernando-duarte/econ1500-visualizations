@@ -50,18 +50,16 @@ def generate_visualizations():
     tab1, tab2, tab3 = st.tabs(["Project Types", "Group Sizes", "Student Distribution"])
     
     with tab1:
-        # Create a pie chart of individual vs. group projects
-        fig1, ax1 = plt.subplots(figsize=(10, 6))
-        labels = ['Individual Projects', 'Group Projects']
+        st.subheader("Project Types Distribution")
+        labels = ['Individual', 'Group']
         sizes = [individual_projects, group_projects]
         colors = ['#ff9999', '#66b3ff']
-        explode = (0.1, 0)  # explode the 1st slice
-    
-        ax1.pie(sizes, explode=explode, labels=labels, colors=colors, autopct='%1.1f%%',
-                shadow=True, startangle=90)
-        ax1.axis('equal')  # Equal aspect ratio ensures that pie is drawn as a circle
-        plt.title("Distribution of Project Types", fontsize=14, fontweight='bold')
-        st.pyplot(fig1)
+        
+        plt.figure(figsize=(8, 6), dpi=100)
+        fig = plt.gcf()
+        plt.pie(sizes, labels=labels, colors=colors, autopct='%1.1f%%', startangle=90, textprops={'fontsize': 14})
+        plt.axis('equal')
+        st.pyplot(fig)
         
         # Save the chart for download using tempfile
         with tempfile.NamedTemporaryFile(delete=False, suffix='.png') as tmp_file:
@@ -78,27 +76,18 @@ def generate_visualizations():
             )
     
     with tab2:
-        # Create a bar chart of group sizes
-        fig2, ax2 = plt.subplots(figsize=(10, 6))
-        group_sizes = sorted(group_size_counts.items())
-        x = [f"{size} Members" for size, _ in group_sizes]
-        y = [count for _, count in group_sizes]
+        st.subheader("Group Size Distribution")
+        sizes = list(group_size_counts.keys())
+        counts = list(group_size_counts.values())
         
-        bars = ax2.bar(x, y, color=['#66b3ff', '#99ff99', '#ffcc99'])
-        
-        # Add counts above bars
-        for bar in bars:
-            height = bar.get_height()
-            ax2.annotate(f'{height}',
-                        xy=(bar.get_x() + bar.get_width() / 2, height),
-                        xytext=(0, 3),  # 3 points vertical offset
-                        textcoords="offset points",
-                        ha='center', va='bottom', fontweight='bold')
-        
-        plt.title("Group Size Distribution", fontsize=14, fontweight='bold')
-        plt.ylabel("Number of Groups")
+        plt.figure(figsize=(8, 6), dpi=100)
+        fig = plt.gcf()
+        plt.bar(sizes, counts, color='#66b3ff')
+        plt.xlabel('Group Size', fontsize=12)
+        plt.ylabel('Number of Groups', fontsize=12)
+        plt.xticks(sizes)
         plt.grid(axis='y', linestyle='--', alpha=0.7)
-        st.pyplot(fig2)
+        st.pyplot(fig)
         
         # Save the chart for download using tempfile
         with tempfile.NamedTemporaryFile(delete=False, suffix='.png') as tmp_file:
@@ -115,72 +104,37 @@ def generate_visualizations():
             )
     
     with tab3:
-        # Create a pie chart showing percentage of students in groups vs. individual
-        fig3, ax3 = plt.subplots(figsize=(10, 6))
-        labels = ['Students in Groups', 'Individual Students']
-        sizes = [students_in_groups, individual_projects]
-        colors = ['#66b3ff', '#ff9999']
+        st.subheader("Student Distribution")
+        labels = ['Individual Projects', 'Group Projects']
+        student_counts = [individual_projects, students_in_groups]
+        colors = ['#ff9999', '#66b3ff']
         
-        ax3.pie(sizes, labels=labels, colors=colors, autopct='%1.1f%%',
-                shadow=True, startangle=90)
-        ax3.axis('equal')
-        plt.title("Distribution of Students by Project Type", fontsize=14, fontweight='bold')
-        st.pyplot(fig3)
+        plt.figure(figsize=(8, 6), dpi=100)
+        fig = plt.gcf()
+        plt.bar(labels, student_counts, color=colors)
+        plt.xlabel('Project Type', fontsize=12)
+        plt.ylabel('Number of Students', fontsize=12)
+        plt.grid(axis='y', linestyle='--', alpha=0.7)
         
-        # Save the chart for download using tempfile
+        # Add percentage annotations
+        for i, count in enumerate(student_counts):
+            plt.text(i, count + 0.5, f"{count} ({count/total_students:.1%})", 
+                     ha='center', fontsize=12)
+        
+        st.pyplot(fig)
+        
+        # Save chart for download
         with tempfile.NamedTemporaryFile(delete=False, suffix='.png') as tmp_file:
             plt.savefig(tmp_file.name)
         
         # Download option
         with open(tmp_file.name, "rb") as file:
             st.download_button(
-                label="Download Chart as PNG",
+                label="Download Student Distribution Chart",
                 data=file.read(),
                 file_name="student_distribution.png",
                 mime="image/png",
                 key="download_student_dist"
-            )
-    
-        # Detailed breakdown of students by group size
-        st.subheader("Student Count by Group Size")
-        
-        student_counts = {}
-        student_counts["Individual"] = individual_projects
-        for size, count in group_size_counts.items():
-            student_counts[f"{size}-Person Groups"] = size * count
-        
-        fig4, ax4 = plt.subplots(figsize=(10, 6))
-        x = list(student_counts.keys())
-        y = list(student_counts.values())
-        
-        bars = ax4.bar(x, y, color=['#ff9999', '#66b3ff', '#99ff99', '#ffcc99'])
-        
-        # Add counts above bars
-        for bar in bars:
-            height = bar.get_height()
-            ax4.annotate(f'{height}',
-                        xy=(bar.get_x() + bar.get_width() / 2, height),
-                        xytext=(0, 3),
-                        textcoords="offset points",
-                        ha='center', va='bottom', fontweight='bold')
-        
-        plt.title("Number of Students by Group Size", fontsize=14, fontweight='bold')
-        plt.ylabel("Number of Students")
-        plt.grid(axis='y', linestyle='--', alpha=0.7)
-        st.pyplot(fig4)
-        
-        # Save the chart for download using tempfile
-        with tempfile.NamedTemporaryFile(delete=False, suffix='.png') as tmp_file:
-            plt.savefig(tmp_file.name)
-        
-        # Download option
-        with open(tmp_file.name, "rb") as file:
-            st.download_button(
-                label="Download Chart as PNG",
-                data=file.read(),
-                file_name="student_count_by_group.png",
-                mime="image/png",
-                key="download_student_count"
             )
     
     # Detailed stats in expandable section

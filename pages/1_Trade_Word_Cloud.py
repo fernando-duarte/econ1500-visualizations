@@ -90,7 +90,9 @@ if cloud_type == "Word Cloud":
     top_words = word_counts.most_common(max_words)
     
     # Create a simple matplotlib word cloud
-    fig, ax = plt.subplots(figsize=(12, 8))
+    plt.figure(figsize=(12, 8), dpi=100)
+    fig = plt.gcf()
+    ax = plt.gca()
     ax.set_facecolor('white')
     
     # Get the maximum count for normalization
@@ -198,7 +200,9 @@ else:
                         G.add_edge(word1, word2, weight=1)
     
     # Visualize the network graph
-    fig, ax = plt.subplots(figsize=(12, 8))
+    plt.figure(figsize=(12, 8), dpi=100)
+    fig = plt.gcf()
+    ax = plt.gca()
     pos = nx.spring_layout(G, seed=42)
     
     # Draw nodes
