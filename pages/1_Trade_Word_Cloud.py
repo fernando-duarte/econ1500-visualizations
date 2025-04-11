@@ -5,6 +5,7 @@ from wordcloud import WordCloud, STOPWORDS
 import networkx as nx
 import re
 import os
+import tempfile
 
 # Page config
 st.set_page_config(
@@ -55,9 +56,6 @@ sector has been concentrated in places like New York, Boston, and San Francisco,
 yet other regions seem to have been left behind.
 """
 
-# Create download directory if it doesn't exist
-os.makedirs("downloads", exist_ok=True)
-
 # Process the text and generate visualization
 if cloud_type == "Word Cloud":
     st.header("Word Cloud Visualization")
@@ -86,12 +84,12 @@ if cloud_type == "Word Cloud":
     plt.tight_layout(pad=0)
     st.pyplot(fig)
     
-    # Save file for download
-    wordcloud_path = "downloads/trade_analysis_wordcloud.png"
-    plt.savefig(wordcloud_path)
-    
+    # Save file for download using tempfile
+    with tempfile.NamedTemporaryFile(delete=False, suffix='.png') as tmp_file:
+        plt.savefig(tmp_file.name)
+        
     # Download option
-    with open(wordcloud_path, "rb") as file:
+    with open(tmp_file.name, "rb") as file:
         st.download_button(
             label="Download Word Cloud as PNG",
             data=file.read(),
@@ -159,12 +157,12 @@ else:
     plt.tight_layout()
     st.pyplot(fig)
     
-    # Save file for download
-    network_path = "downloads/trade_analysis_network.png"
-    plt.savefig(network_path)
-    
+    # Save file for download using tempfile
+    with tempfile.NamedTemporaryFile(delete=False, suffix='.png') as tmp_file:
+        plt.savefig(tmp_file.name)
+        
     # Download option
-    with open(network_path, "rb") as file:
+    with open(tmp_file.name, "rb") as file:
         st.download_button(
             label="Download Network Graph as PNG",
             data=file.read(),

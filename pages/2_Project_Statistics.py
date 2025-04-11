@@ -3,6 +3,7 @@ import numpy as np
 import streamlit as st
 from collections import Counter
 import os
+import tempfile
 
 # Set up Streamlit page
 st.set_page_config(
@@ -34,9 +35,6 @@ def generate_visualizations():
     percent_in_groups = (students_in_groups / total_students) * 100
     percent_individual = 100 - percent_in_groups
     
-    # Create download directory if it doesn't exist
-    os.makedirs("downloads", exist_ok=True)
-    
     # Display key metrics
     col1, col2, col3 = st.columns(3)
     with col1:
@@ -63,12 +61,12 @@ def generate_visualizations():
         plt.title("Distribution of Project Types", fontsize=14, fontweight='bold')
         st.pyplot(fig1)
         
-        # Save the chart for download
-        project_types_path = "downloads/project_types.png"
-        plt.savefig(project_types_path)
+        # Save the chart for download using tempfile
+        with tempfile.NamedTemporaryFile(delete=False, suffix='.png') as tmp_file:
+            plt.savefig(tmp_file.name)
         
         # Download option
-        with open(project_types_path, "rb") as file:
+        with open(tmp_file.name, "rb") as file:
             st.download_button(
                 label="Download Chart as PNG",
                 data=file.read(),
@@ -100,12 +98,12 @@ def generate_visualizations():
         plt.grid(axis='y', linestyle='--', alpha=0.7)
         st.pyplot(fig2)
         
-        # Save the chart for download
-        group_sizes_path = "downloads/group_sizes.png"
-        plt.savefig(group_sizes_path)
+        # Save the chart for download using tempfile
+        with tempfile.NamedTemporaryFile(delete=False, suffix='.png') as tmp_file:
+            plt.savefig(tmp_file.name)
         
         # Download option
-        with open(group_sizes_path, "rb") as file:
+        with open(tmp_file.name, "rb") as file:
             st.download_button(
                 label="Download Chart as PNG",
                 data=file.read(),
@@ -127,12 +125,12 @@ def generate_visualizations():
         plt.title("Distribution of Students by Project Type", fontsize=14, fontweight='bold')
         st.pyplot(fig3)
         
-        # Save the chart for download
-        student_dist_path = "downloads/student_distribution.png"
-        plt.savefig(student_dist_path)
+        # Save the chart for download using tempfile
+        with tempfile.NamedTemporaryFile(delete=False, suffix='.png') as tmp_file:
+            plt.savefig(tmp_file.name)
         
         # Download option
-        with open(student_dist_path, "rb") as file:
+        with open(tmp_file.name, "rb") as file:
             st.download_button(
                 label="Download Chart as PNG",
                 data=file.read(),
@@ -169,12 +167,12 @@ def generate_visualizations():
         plt.grid(axis='y', linestyle='--', alpha=0.7)
         st.pyplot(fig4)
         
-        # Save the chart for download
-        student_count_path = "downloads/student_count_by_group.png"
-        plt.savefig(student_count_path)
+        # Save the chart for download using tempfile
+        with tempfile.NamedTemporaryFile(delete=False, suffix='.png') as tmp_file:
+            plt.savefig(tmp_file.name)
         
         # Download option
-        with open(student_count_path, "rb") as file:
+        with open(tmp_file.name, "rb") as file:
             st.download_button(
                 label="Download Chart as PNG",
                 data=file.read(),
