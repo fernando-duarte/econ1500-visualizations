@@ -1,11 +1,13 @@
 import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
-from wordcloud import WordCloud, STOPWORDS
 import networkx as nx
 import re
 import os
 import tempfile
+from collections import Counter
+import numpy as np
+import random
 
 # Page config
 st.set_page_config(
@@ -21,7 +23,7 @@ st.markdown("---")
 
 # Sidebar
 st.sidebar.header("Controls")
-max_words = st.sidebar.slider("Maximum Words", 50, 300, 150, 10)
+max_words = st.sidebar.slider("Maximum Words", 20, 100, 50, 5)
 cloud_type = st.sidebar.radio("Visualization Type", ["Word Cloud", "Network Graph"])
 
 # Trade proposal text - extracted from the markdown file
@@ -56,31 +58,93 @@ sector has been concentrated in places like New York, Boston, and San Francisco,
 yet other regions seem to have been left behind.
 """
 
+# Define custom stopwords
+custom_stopwords = [
+    "will", "also", "seek", "want", "make", "states", "state", "u.s", "united", "would",
+    "the", "and", "of", "to", "in", "that", "is", "for", "on", "with", "by", "as", "this",
+    "be", "are", "have", "has", "been", "from", "an", "their", "these", "those", "it", "its",
+    "or", "at", "but", "not", "they", "which", "all"
+]
+
+# Function to process text
+def process_text(text, stopwords):
+    # Convert to lowercase and split into words
+    words = re.findall(r'\b[a-zA-Z]{3,}\b', text.lower())
+    # Remove stopwords
+    filtered_words = [word for word in words if word not in stopwords]
+    # Count word frequency
+    word_counts = Counter(filtered_words)
+    return word_counts
+
 # Process the text and generate visualization
 if cloud_type == "Word Cloud":
     st.header("Word Cloud Visualization")
     st.write("This word cloud highlights the most frequent and important terms in the North American trade analysis proposal.")
     
-    # Add more custom stopwords related to the dataset
-    custom_stopwords = set(STOPWORDS)
-    custom_stopwords.update(["will", "also", "seek", "want", "make", "states", "state", "u.s", "united", "would"])
+    # Process text and get word counts
+    word_counts = process_text(trade_text, custom_stopwords)
     
-    # Generate word cloud
-    wordcloud = WordCloud(
-        background_color="white",
-        max_words=max_words,
-        stopwords=custom_stopwords,
-        width=800,
-        height=400,
-        colormap="viridis",
-        contour_width=1,
-        contour_color="steelblue"
-    ).generate(trade_text)
+    # Take top N words
+    top_words = word_counts.most_common(max_words)
     
-    # Display the generated image
+    # Create a simple matplotlib word cloud
     fig, ax = plt.subplots(figsize=(12, 8))
-    ax.imshow(wordcloud, interpolation='bilinear')
-    ax.axis("off")
+    ax.set_facecolor('white')
+    
+    # Get the maximum count for normalization
+    max_count = max([count for _, count in top_words])
+    
+    # Random positions for the words
+    np.random.seed(42)  # For reproducibility
+    positions = {}
+    
+    for word, count in top_words:
+        # Font size based on frequency (normalized)
+        font_size = 10 + (count / max_count) * 100
+        
+        # Try to find a position for the word
+        placed = False
+        attempts = 0
+        while not placed and attempts < 100:
+            # Random position
+            x = np.random.uniform(0.1, 0.9)
+            y = np.random.uniform(0.1, 0.9)
+            
+            # Check for overlap with existing words
+            overlap = False
+            for w, (wx, wy, ws) in positions.items():
+                # Simple distance check
+                dist = np.sqrt((x - wx)**2 + (y - wy)**2)
+                if dist < (font_size + ws) / 1000:  # Arbitrary threshold
+                    overlap = True
+                    break
+            
+            if not overlap:
+                positions[word] = (x, y, font_size)
+                placed = True
+            
+            attempts += 1
+    
+    # Different colors for the words
+    colors = plt.cm.viridis(np.linspace(0, 1, len(top_words)))
+    
+    # Plot the words
+    for i, (word, (x, y, font_size)) in enumerate(positions.items()):
+        ax.text(x, y, word, fontsize=font_size, 
+                color=colors[i], 
+                ha='center', va='center', 
+                rotation=np.random.uniform(-30, 30))
+    
+    # Remove axes and ticks
+    ax.set_xticks([])
+    ax.set_yticks([])
+    ax.set_xlim(0, 1)
+    ax.set_ylim(0, 1)
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    ax.spines['bottom'].set_visible(False)
+    ax.spines['left'].set_visible(False)
+    
     plt.tight_layout(pad=0)
     st.pyplot(fig)
     
@@ -101,29 +165,22 @@ else:
     st.header("Network Graph of Related Terms")
     st.write("This graph shows connections between important topics in the trade analysis.")
     
-    # Process text for network graph
-    words = re.findall(r'\b[a-zA-Z]{3,}\b', trade_text.lower())
-    custom_stopwords = set(STOPWORDS)
-    custom_stopwords.update(["will", "also", "seek", "want", "make", "this", "that", "these", "those", "been", "have"])
-    filtered_words = [word for word in words if word not in custom_stopwords]
+    # Process text and get word counts
+    word_counts = process_text(trade_text, custom_stopwords)
     
-    # Count word frequency
-    word_counts = {}
-    for word in filtered_words:
-        if word in word_counts:
-            word_counts[word] += 1
-        else:
-            word_counts[word] = 1
+    # Take top N words
+    top_words = dict(word_counts.most_common(max_words // 3))
     
     # Create nodes and edges
     G = nx.Graph()
     
-    # Get top words by frequency
-    top_words = sorted(word_counts.items(), key=lambda x: x[1], reverse=True)[:max_words//3]
-    
     # Add nodes for top words
-    for word, count in top_words:
+    for word, count in top_words.items():
         G.add_node(word, size=count*20)
+    
+    # Process text for graph connections
+    words = re.findall(r'\b[a-zA-Z]{3,}\b', trade_text.lower())
+    filtered_words = [word for word in words if word not in custom_stopwords]
     
     # Add edges between words that appear close together
     window_size = 3
@@ -132,7 +189,7 @@ else:
         for j in range(len(window)):
             for k in range(j+1, len(window)):
                 word1, word2 = window[j], window[k]
-                if word1 in dict(top_words) and word2 in dict(top_words):
+                if word1 in top_words and word2 in top_words:
                     if G.has_edge(word1, word2):
                         G[word1][word2]['weight'] += 1
                     else:
